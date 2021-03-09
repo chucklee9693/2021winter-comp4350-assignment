@@ -1,4 +1,7 @@
 import { Component } from 'react';
+import { connect } from "react-redux";
+
+// import some necessary mui components
 import Paper from '@material-ui/core/Paper';
 import InputBase from '@material-ui/core/InputBase';
 import IconButton from '@material-ui/core/IconButton';
@@ -12,7 +15,10 @@ import AccordionDetails from '@material-ui/core/AccordionDetails';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ThumbUpTwoToneIcon from '@material-ui/icons/ThumbUpTwoTone';
 import DateRangeTwoToneIcon from '@material-ui/icons/DateRangeTwoTone';
-import { connect } from "react-redux";
+import HighlightOffIcon from '@material-ui/icons/HighlightOff';
+import Chip from '@material-ui/core/Chip';
+
+// import actions
 import { 
   setTag,
   setSearchClicked,
@@ -20,24 +26,29 @@ import {
   setResults,
   setResponseTime,
 } from '../actions/search'
+
 import InstructionCard from './InstructionCard'
 import axios from "axios";
 
+
 const styles = {
   paper: {
-    backgroundColor: '#dedede',
+    display: 'flex',
+    backgroundColor: '#ebebeb',
     margin: '50px 25%',
   },
   input: {
-    width: 'calc(100% - 47.97px)',
+    width: 'calc(100% - 48px * 2)',
     padding: '0px 20px',
   },
-  container: {
-    paddingTop: '30px',
-    backgroundColor: '#dedede',
-  },
   accordion: {
-    margin: '8px'
+    margin: '8px',
+  },
+  accordionsummary: {
+    backgroundColor: '#cccccc',
+  },
+  accordiondetails: {
+    backgroundColor: '#ebebeb',
   },
   blockdisplay: {
     display: 'block'
@@ -46,13 +57,25 @@ const styles = {
     display: 'flex'
   },
   divider:{
-    border: '2px dashed #dedede'
+    border: '2px dashed #525252'
+  },
+  tag: {
+    margin: '0px 4px 2px 0px',
+    color: '#525252'
   }
 }
 
 class Search extends Component {
 
   componentWillUnmount() {
+    this.resetComponent()
+  }
+
+  handleTagInput = (event) => {
+    this.props.setTag(event.target.value)
+  }
+
+  resetComponent = () => {
     this.props.setTag("")
     this.props.setSearchClicked(false)
     this.props.setDataRetrieved(false)
@@ -60,8 +83,8 @@ class Search extends Component {
     this.props.setResponseTime("")
   }
 
-  handleTagInput = (event) => {
-    this.props.setTag(event.target.value)
+  handleReset = () => {
+    this.resetComponent()
   }
 
   handleSearch = () => {
@@ -86,14 +109,15 @@ class Search extends Component {
     const pageSize = 10;
 
     // 10 newest questions
-    const tenNewestUrl = 'https://api.stackexchange.com/2.2/questions?pagesize=' + pageSize + '&order=desc&sort=creation&tagged=' + this.props.tag + '&site=stackoverflow&filter=' + filterValue
+    const tenNewestUrl = 'https://api.stackexchange.com/2.2/questions?pagesize=' + pageSize + '&order=desc&sort=creation&tagged=' + encodeURIComponent(this.props.tag) + '&site=stackoverflow&filter=' + filterValue
 
 
     const toDate = Math.round((new Date()).getTime()/1000)
     const fromDate = toDate - 7 * 24 * 60 * 60
     // 10 most voted questions in the past week
-    const tenMostVotedUrl = 'https://api.stackexchange.com/2.2/questions?pagesize=' + pageSize + '&fromdate=' + fromDate + '&todate=' + toDate +'&order=desc&sort=votes&tagged=' + this.props.tag + '&site=stackoverflow&filter=' + filterValue
+    const tenMostVotedUrl = 'https://api.stackexchange.com/2.2/questions?pagesize=' + pageSize + '&fromdate=' + fromDate + '&todate=' + toDate +'&order=desc&sort=votes&tagged=' + encodeURIComponent(this.props.tag) + '&site=stackoverflow&filter=' + filterValue
 
+    // time stamp before request
     const beforeRequest = (new Date()).getTime()
     axios.all([
       axios.get(tenNewestUrl),
@@ -116,10 +140,11 @@ class Search extends Component {
           return b.creation_date - a.creation_date
         })
 
-        
-        
         this.renderResults(results)
+
+        // get time after receiving response
         const afterRequest = (new Date()).getTime()
+
         this.props.setResponseTime(String((afterRequest - beforeRequest)/1000))
         this.props.setDataRetrieved(true)
       })
@@ -150,6 +175,7 @@ class Search extends Component {
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 id={element.question_id}
+                style={styles.accordionsummary}
               >
                 <div style={styles.blockdisplay}>
 
@@ -158,24 +184,35 @@ class Search extends Component {
                     <div dangerouslySetInnerHTML={{__html: element.title}} />
                   </Typography>
 
+                  {/* tags on the question */}
+                  { 
+                    element.tags ? 
+                    (
+                      <div style={styles.flexdisplay}>
+                        {this.renderTags(element.tags)}
+                      </div>
+                    ) : (
+                      <div />
+                    )
+                  }
+      
+                    
                   {/* votes and creation date on question */}
                   <div style={styles.flexdisplay}>
-                    <ThumbUpTwoToneIcon />&nbsp;<Typography variant="body1">Vote: {element.score}</Typography>&emsp;
-                    <DateRangeTwoToneIcon />&nbsp;<Typography variant="body1">Creation Date: {this.formatDate(element.creation_date)}</Typography>
+                    <ThumbUpTwoToneIcon fontSize='small' />&nbsp;<Typography variant="body2">Vote: {element.score}</Typography>&emsp;
+                    <DateRangeTwoToneIcon fontSize='small' />&nbsp;<Typography variant="body2">Creation Date: {this.formatDate(element.creation_date)}</Typography>
                   </div>
 
                 </div>
               </AccordionSummary>
 
-              <AccordionDetails>
+              <AccordionDetails style={styles.accordiondetails}>
 
                 <div style={styles.blockdisplay}>
 
                   {/* question description */}
                   <Typography variant="h6"><b>Description</b></Typography>
-                  <Typography variant="body2">
-                    <div dangerouslySetInnerHTML={{__html: element.body}} />
-                  </Typography>
+                  <div dangerouslySetInnerHTML={{__html: element.body}} />
 
                   {/* comments on question */}
                   { 
@@ -186,9 +223,7 @@ class Search extends Component {
                         <Typography variant="h6"><b>Comment(s) on Question</b></Typography>
                         {this.renderComments(element.comments)}
                       </div>
-                    )
-                    :
-                    (
+                    ) : (
                       <div />
                     )
                   }
@@ -200,9 +235,7 @@ class Search extends Component {
                       <div>
                         {this.renderAnswers(element.answers)}
                       </div>
-                    )
-                    :
-                    (
+                    ) : (
                       <div />
                     )
                   }
@@ -221,19 +254,31 @@ class Search extends Component {
 
   }
 
+  renderTags = (tags) => {
+    let result = []
+
+    tags.forEach(element => {
+      result.push(
+        <div key={element}>
+          <Chip style={styles.tag} variant="outlined" size="small" label={element}/>
+        </div>
+      )
+    })
+
+    return result
+  }
+
   renderAnswers = (answers) => {
     let result = []
     let i = 0;
     answers.forEach(element => {
       i++;
       result.push(
-        <div style={styles.blockdisplay}>
+        <div key={element.answer_id} style={styles.blockdisplay}>
           <hr style={styles.divider} />
           {/* answer body */}
           <Typography variant="h6"><b>Answer {i}</b></Typography>
-          <Typography variant="body2">
-            <div dangerouslySetInnerHTML={{__html: element.body}} />
-          </Typography>
+          <div dangerouslySetInnerHTML={{__html: element.body}} />
 
           {/* votes and creation date on answer */}
           <div style={styles.flexdisplay}>
@@ -245,15 +290,13 @@ class Search extends Component {
 
           {/* comments on answer */}
           {
-            element.comments ?
+            element.comments ? 
             (
               <div>
                 <Typography variant="h6"><b>Comment(s) on Answer {i}</b></Typography>
                 {this.renderComments(element.comments)}
               </div>
-            )
-            :
-            (
+            ) : (
               <div />
             )
           }
@@ -269,11 +312,9 @@ class Search extends Component {
     let result = []
     comments.forEach(element => {
       result.push(
-        <div style={styles.blockdisplay}>
+        <div key={element.comment_id} style={styles.blockdisplay}>
           {/* comment body */}
-          <Typography variant="body2">
-            <div dangerouslySetInnerHTML={{__html: element.body}} />
-          </Typography>
+          <div dangerouslySetInnerHTML={{__html: element.body}} />
 
           {/* votes and creation date on comment */}
           <div style={styles.flexdisplay}>
@@ -299,6 +340,7 @@ class Search extends Component {
   render() {
     return (
       <div>
+        {/* search box */}
         <Paper style={styles.paper}>
           <InputBase
             style={styles.input}
@@ -307,33 +349,38 @@ class Search extends Component {
             value={this.props.tag}
             onChange={this.handleTagInput}
           />
-          <IconButton 
+          <IconButton
+            disabled={this.props.tag === ""}
+            onClick={this.handleReset}
+            aria-label="reset"
+          >
+            <HighlightOffIcon />
+          </IconButton>
+          <hr />
+          <IconButton
             onClick={this.handleSearch} 
             aria-label="search"
           >
             <SearchIcon />
           </IconButton>
         </Paper>
+        
         { this.props.searchClicked ?
           (
             this.props.dataRetrieved ?
             (
-              <Container style={styles.container} maxWidth='xl'>
+              <Container maxWidth='xl'>
                 {this.props.results}
                 <Typography variant="h6" style={{textAlign: 'center'}}>
-                  <b>The search took {this.props.responseTime} seconds.</b>
+                  <b>This search took {this.props.responseTime} seconds.</b>
                 </Typography>
               </Container>
-            )
-            :
-            (
+            ) : (
               <div style={{ textAlign: "center" }}>
                 <CircularProgress  />
               </div>
             )
-          ) 
-          : 
-          (
+          ) : (
             <InstructionCard />
           )
         }

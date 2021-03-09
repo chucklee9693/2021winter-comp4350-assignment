@@ -5,7 +5,8 @@ import Typography from '@material-ui/core/Typography';
 
 const styles = {
   card: {
-    margin: '0px 25%'
+    margin: '0px 25%',
+    backgroundColor: '#ebebeb',
   }
 }
 
@@ -13,7 +14,7 @@ class InstructionCard extends Component {
 
   render() {
     return (
-      <Card style={styles.card} variant="outlined">
+      <Card style={styles.card}>
         <CardContent>
           <Typography variant="h6">
             <b>Tips</b>
@@ -32,6 +33,11 @@ class InstructionCard extends Component {
             <li>
               <Typography variant="body2">
                 Passing more than 5 tags will always return 0 result.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="body2">
+                The search will return a merged list of up to 10 newest questions and 10 most voted questions in the past week related to the tag(s) sorted by creation date descendingly.
               </Typography>
             </li>
             <li>
