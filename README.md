@@ -1,4 +1,5 @@
 # COMP4350 2021W Assignment
+#### A web application for exploring Stack Overflow questions
 
 ### Run with `npm start`
 
